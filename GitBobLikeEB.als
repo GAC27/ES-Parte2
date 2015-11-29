@@ -56,4 +56,36 @@ fact{
 }
 
 
-run{}
+assert fileSizeBiggerThan0{
+	no  f: FILES |
+		gitBob.fileSize[f]<0
+}
+
+//check fileSizeBiggerThan0
+
+assert fileVersionBiggerThan0{
+	no  f: FILES |
+		gitBob.fileVersion[f]<1
+}
+
+//check fileVersionBiggerThan0
+
+pred newUser (g, g': gitBob, u: USERS, m: MODE, t: UTYPES){
+	g'.registeredUserEmail = 	g.registeredUserEmail + u->m
+	g'.registeredUserType = 	g.registeredUserType + u->t
+}
+
+pred removeUser(g, g': gitBob, u: USERS){
+	g'.registeredUserEmail = g.registeredUserEmail - u->g.registeredUserEmail[u]
+	g'.registeredUserType = g.registeredUserType - u->g.registeredUserType[u]
+}
+
+pred upgradeUser(g,g': gitBob, u: USERS){
+	 g'.registeredUserType[u]= PREMIUM
+}
+
+pred downgradeBasic(g,g': gitBob, u: USERS){
+	  g'.registeredUserType[u]= BASIC
+}
+
+run{} for 2
