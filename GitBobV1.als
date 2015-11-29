@@ -50,6 +50,23 @@ fact{
 		f.version>0 && f.size>=0
 }
 
+pred newUser (g, g': gitBob, u: USERS, m: MODE, t: UTYPES){
+	g'.registeredUsers = 	g.registeredUsers + u->m->t
+}
+
+pred removeUser(g, g': gitBob, u: USERS){
+	g'.registeredUsers = g.registeredUsers - u->g.registeredUsers[u]
+
+}
+pred upgradeUser(g,g': gitBob, u: USERS){
+//	 g'.registeredUsers[u].UEMAILS=g.registeredUsers[u].UEMAILS ++ PREMIUM
+	 g'.registeredUsers[u]=g.registeredUsers[u].UTYPES->PREMIUM
+
+}
+pred downgradeBasic(g,g': gitBob, u: USERS){
+	 g'.registeredUsers[u]=g.registeredUsers[u].UTYPES->BASIC
+}
+
 //Nao existem 2+ users iguais
 assert noUsersIguais{
 	all  u1: USERS |
@@ -91,6 +108,6 @@ assert fileVersionBiggerThan0{
 //check fileVersionBiggerThan0
 
 
-
+run add for 3
 run{} for 2
  
