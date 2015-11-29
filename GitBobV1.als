@@ -40,7 +40,8 @@ assert noMailsIguais{
 		u1->m1->t1 in gitBob.registeredUsers && u2->m2->t2 in gitBob.registeredUsers && u1!=u2 && m1=m2
 }
 
-check noUsersIguais
+//falar do resultado do contra exemplo disto ao stor
+//check noUsersIguais
 
 //check noMailsIguais
 
