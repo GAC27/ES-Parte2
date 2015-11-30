@@ -28,11 +28,11 @@ one sig READONLY extends MODE {}
 sig gitBob{
 	registeredUserEmail:  USERS lone -> lone UEMAILS,  //requisite 2
 	registeredUserType:  USERS set -> lone UTYPES,  //requisite 2
-	fileMode:	FILES  -> lone MODE,
-	fileSize:	FILES  -> lone Int,
-	fileVersion:	FILES  -> lone Int,
-	fileOwner:	FILES  -> lone USERS,
-	localFiles:  FILES -> USERS
+	fileMode:	FILES  -> lone MODE, 			//requisite 10
+	fileSize:	FILES  -> lone Int, 				//requisite 10
+	fileVersion:	FILES  -> lone Int, 				//requisite 10
+	fileOwner:	FILES  -> lone USERS, 			//requisite 10
+	localFiles:  FILES -> USERS 					//requisite 10
 
 }
 
@@ -125,6 +125,8 @@ pred downgradeBasic(g,g': gitBob, u: USERS){
 
 pred addFile(g,g': gitBob, file:FILES, size:Int, owner: USERS){
 	//preconditions
+	#g.registeredUserEmail[owner]=1 //requisite 16
+	#g.registeredUserType[owner]=1 //requisite 16
 	#g.fileMode[file]=0 //requisite 15
 	#g.fileSize[file]=0 //requisite 15
 	#g.fileVersion[file]=0 //requisite 15
@@ -133,7 +135,7 @@ pred addFile(g,g': gitBob, file:FILES, size:Int, owner: USERS){
 	//operation
 	g'.fileMode = g.fileMode + file->REGULAR
 	g'.fileSize = g.fileSize + file-> size
-	g'.fileVersion = g.fileVersion + file ->1
+	g'.fileVersion = g.fileVersion + file ->1 //requisite 17
 	g'.fileOwner = g.fileOwner + file-> owner
 	g'.localFiles = g.localFiles + file-> owner
 }
@@ -143,31 +145,40 @@ pred addFile(g,g': gitBob, file:FILES, size:Int, owner: USERS){
 //falta ver os acessos e partilhas
 pred removeFile (g,g': gitBob, file:FILES, usr: USERS){
 	//preconditions
-	#g.fileMode[file]=1 //requisite 15
-	#g.fileSize[file]=1 //requisite 15
-	#g.fileVersion[file]=1 //requisite 15
-	#g.fileOwner[file]=1 //requisite 15
-	#g.localFiles[file]>=1 //requisite 15
+	#g.fileMode[file]=1	//requisite 18
+	#g.fileSize[file]=1 	//requisite 18
+	#g.fileVersion[file]=1 	//requisite 18
+	#g.fileOwner[file]=1 	//requisite 18
+	#g.localFiles[file]>=1 	//requisite 18
 	//operations
-	g'.fileMode = g.fileMode - file->g.fileMode[file]
-	g'.fileSize = g.fileSize - file-> g.fileSize[file]
-	g'.fileVersion = g.fileVersion - file ->g.fileVersion[file]
-	g'.fileOwner = g.fileOwner - file-> g.fileOwner[file]
-	g'.localFiles = g.localFiles - file-> USERS
+	g'.fileMode = g.fileMode - file->g.fileMode[file]		//requisite 12 ficheiros removidos ja nao constam no gitBob
+	g'.fileSize = g.fileSize - file-> g.fileSize[file]			//requisite 12
+	g'.fileVersion = g.fileVersion - file ->g.fileVersion[file]	//requisite 12
+	g'.fileOwner = g.fileOwner - file-> g.fileOwner[file]		//requisite 12
+	g'.localFiles = g.localFiles - file-> USERS			//requisite 12
 }
 
-
-/*
 pred uploadFile(g,g': gitBob, file:FILES, usr: USERS){
-	g'.fileVersion[file] = integer/add[g.fileVersion[file], 1]
+	//preconditions
+	#g.fileMode[file]=1 	//requisite 18
+	#g.fileSize[file]=1 	//requisite 18
+	#g.fileVersion[file]=1 	//requisite 18
+	#g.fileOwner[file]=1 	//requisite 18
+	file->usr in g.localFiles //requisite 18 
+	//operations
+	g'.fileVersion[file] = integer/add[g.fileVersion[file], 1]	//requisite 19
 }
 
 
 pred downloadFile(g,g': gitBob, file:FILES, usr: USERS){
-	//temos de meter o file no repositorio local e com a versao actual do gitBob
-	g'.localFiles[file][usr] = g.fileVersion[file]
+	//preconditions
+	#g.fileMode[file]=1 	//requisite 18
+	#g.fileSize[file]=1 	//requisite 18
+	#g.fileVersion[file]=1 	//requisite 18
+	#g.fileOwner[file]=1 	//requisite 18
+	file->usr in g.localFiles //requisite 18 
 }
-*/
+
 
 run removeFile for 3 but 2 gitBob , 1 FILES
 
