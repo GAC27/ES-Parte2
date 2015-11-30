@@ -28,11 +28,12 @@ one sig READONLY extends MODE {}
 sig gitBob{
 	registeredUserEmail:  USERS lone -> lone UEMAILS,  //requisite 2
 	registeredUserType:  USERS set -> lone UTYPES,  //requisite 2
-	fileMode:	FILES  -> lone MODE, 			//requisite 10
+	fileMode:	FILES  -> lone MODE, 			//requisite 10 and 29
 	fileSize:	FILES  -> lone Int, 				//requisite 10
-	fileVersion:	FILES  -> lone Int, 				//requisite 10
+	fileVersion:	FILES  -> lone Int, 				//requisite 10 and 37
 	fileOwner:	FILES  -> lone USERS, 			//requisite 10
-	localFiles:  FILES -> USERS 					//requisite 10
+	//usado para guardarmos os acessos dos users aos files
+	localFiles:  FILES -> USERS 					//requisite 10 and 20
 
 }
 
@@ -44,7 +45,7 @@ pred init [g: gitBob] {
 	no g.fileSize 		//requisite 13
 	no g.fileVersion		//requisite 13
 	no g.fileOwner 		//requisite 13
-	no g.localFiles		//requisite 13
+	no g.localFiles		//requisite 13 and 23
 
  // all g: gitBob | g.state= t
 }
@@ -76,14 +77,22 @@ fact{
 		gitBob.fileVersion[f]>0 && gitBob.fileSize[f]>=0
 }
 
-fact traces {
-  init [gb/first]
-  all g: gitBob - gb/last | let g' = g.next |
-    some u:USERS, m: UEMAILS, t: UTYPES,file: FILES, size: Int,owner: USERS|
-	//g'.registeredUserEmail=g.registeredUserEmail para todas as relaçoes do gitBob de forma a forçarmos 
-	//o git seguinte a ter tudo igual ao anterior e so depois executamos um predicado
-      newUser[g, g', u, m, t] or removeUser[g,g',u] or upgradeUser[g,g',u] or addFile[g,g', file, size, owner]
+//requisite 22: A GitBob ﬁle is always shared with its owner;
+fact{
+	all f:FILES | all u:USERS | all g:gitBob |
+		f->u in g.fileOwner => f->u in g.localFiles
 }
+
+fact traces {
+	init [gb/first]
+	all g: gitBob - gb/last | let g' = g.next |
+		some u:USERS, m: UEMAILS, t: UTYPES,file: FILES, size: Int,owner: USERS|
+		//g'.registeredUserEmail=g.registeredUserEmail para todas as relaçoes do gitBob de forma a forçarmos 
+		//o git seguinte a ter tudo igual ao anterior e so depois executamos um predicado
+     		newUser[g, g', u, m, t] or removeUser[g,g',u] or upgradeUser[g,g',u] or 
+		addFile[g,g', file, size, owner] or uploadFile[g,g', file, u] or downloadFile[g,g', file, u]
+}
+
 
 //requisite1
 pred newUser (g,g': gitBob, u: USERS, m: UEMAILS, t: UTYPES, ){
@@ -98,8 +107,9 @@ pred newUser (g,g': gitBob, u: USERS, m: UEMAILS, t: UTYPES, ){
 
 pred removeUser(g,g': gitBob, u: USERS){
     //preconditions
-	#g.registeredUserEmail[u]=1 //requisite 6
-	#g.registeredUserType[u]=1 //requisite 6
+	#g.registeredUserEmail[u]=1 	//requisite 6
+	#g.registeredUserType[u]=1 	//requisite 6
+	#~(g.localFiles)[u]=0			//requisite 24
 	//operations
 	g'.registeredUserEmail = g.registeredUserEmail - u->g.registeredUserEmail[u]
 	g'.registeredUserType = g.registeredUserType - u->g.registeredUserType[u]
@@ -116,26 +126,27 @@ pred upgradeUser(g,g': gitBob, u: USERS){
 
 pred downgradeBasic(g,g': gitBob, u: USERS){
 	//preconditions
-	#g.registeredUserEmail[u]=1 //requisite 8
-	#g.registeredUserType[u]=1 //requisite 8
-	g.registeredUserType[u]=PREMIUM //requisite 9
+	#g.registeredUserEmail[u]=1 				//requisite 8
+	#g.registeredUserType[u]=1				//requisite 8
+	g.registeredUserType[u]=PREMIUM			//requisite 9
+	(all f: g.localFiles.u| g.fileMode[f]!= SECURE) 	//requisite 31
 	//operation
 	g'.registeredUserType[u]= BASIC
 }
 
 pred addFile(g,g': gitBob, file:FILES, size:Int, owner: USERS){
 	//preconditions
-	#g.registeredUserEmail[owner]=1 //requisite 16
-	#g.registeredUserType[owner]=1 //requisite 16
-	#g.fileMode[file]=0 //requisite 15
-	#g.fileSize[file]=0 //requisite 15
-	#g.fileVersion[file]=0 //requisite 15
-	#g.fileOwner[file]=0 //requisite 15
-	#g.localFiles[file]=0 //requisite 15
+	#g.registeredUserEmail[owner]=1 	//requisite 16
+	#g.registeredUserType[owner]=1		//requisite 16
+	#g.fileMode[file]=0 				//requisite 15
+	#g.fileSize[file]=0				//requisite 15
+	#g.fileVersion[file]=0				//requisite 15
+	#g.fileOwner[file]=0				//requisite 15
+	#g.localFiles[file]=0				//requisite 15
 	//operation
-	g'.fileMode = g.fileMode + file->REGULAR
+	g'.fileMode = g.fileMode + file->REGULAR 	//requisite 29 and 32
 	g'.fileSize = g.fileSize + file-> size
-	g'.fileVersion = g.fileVersion + file ->1 //requisite 17
+	g'.fileVersion = g.fileVersion + file ->1 		//requisite 17
 	g'.fileOwner = g.fileOwner + file-> owner
 	g'.localFiles = g.localFiles + file-> owner
 }
@@ -145,11 +156,13 @@ pred addFile(g,g': gitBob, file:FILES, size:Int, owner: USERS){
 //falta ver os acessos e partilhas
 pred removeFile (g,g': gitBob, file:FILES, usr: USERS){
 	//preconditions
-	#g.fileMode[file]=1	//requisite 18
-	#g.fileSize[file]=1 	//requisite 18
-	#g.fileVersion[file]=1 	//requisite 18
-	#g.fileOwner[file]=1 	//requisite 18
-	#g.localFiles[file]>=1 	//requisite 18
+	#g.fileMode[file]=1		//requisite 18
+	#g.fileSize[file]=1 		//requisite 18
+	#g.fileVersion[file]=1 		//requisite 18
+	#g.fileOwner[file]=1 		//requisite 18
+	#g.localFiles[file]>=1 		//requisite 18
+	file->usr in g.localFiles 	//requisite 25
+	(g.fileMode[file]=READONLY => g.fileOwner[file]=usr)	//requisite 33
 	//operations
 	g'.fileMode = g.fileMode - file->g.fileMode[file]		//requisite 12 ficheiros removidos ja nao constam no gitBob
 	g'.fileSize = g.fileSize - file-> g.fileSize[file]			//requisite 12
@@ -164,22 +177,70 @@ pred uploadFile(g,g': gitBob, file:FILES, usr: USERS){
 	#g.fileSize[file]=1 	//requisite 18
 	#g.fileVersion[file]=1 	//requisite 18
 	#g.fileOwner[file]=1 	//requisite 18
-	file->usr in g.localFiles //requisite 18 
+	file->usr in g.localFiles //requisite 18 and 25
+	(g.fileMode[file]=READONLY => g.fileOwner[file]=usr)	//requisite 34
 	//operations
-	g'.fileVersion[file] = integer/add[g.fileVersion[file], 1]	//requisite 19
+	g'.fileVersion[file] = g.fileVersion[file].next	//requisite 19
+
 }
 
 
 pred downloadFile(g,g': gitBob, file:FILES, usr: USERS){
 	//preconditions
-	#g.fileMode[file]=1 	//requisite 18
-	#g.fileSize[file]=1 	//requisite 18
-	#g.fileVersion[file]=1 	//requisite 18
-	#g.fileOwner[file]=1 	//requisite 18
-	file->usr in g.localFiles //requisite 18 
+	#g.fileMode[file]=1 		//requisite 18
+	#g.fileSize[file]=1 		//requisite 18
+	#g.fileVersion[file]=1 		//requisite 18
+	#g.fileOwner[file]=1 		//requisite 18
+	file->usr in g.localFiles	//requisite 18  and 25
 }
 
+pred shareFile(g,g': gitBob, file: FILES, usr1, usr2: USERS){
+	//preconditions
+	#g.registeredUserEmail[usr1]=1	//requisite 21
+	#g.registeredUserType[usr1]=1 	//requisite 21
+	#g.registeredUserEmail[usr2]=1	//requisite 21
+	#g.registeredUserType[usr2]=1	//requisite 21
+	#g.fileMode[file]=1 			//requisite 18
+	#g.fileSize[file]=1 			//requisite 18
+	#g.fileVersion[file]=1 			//requisite 18
+	#g.fileOwner[file]=1 			//requisite 18
+	file->usr1 in g.localFiles		//requisite 18 and 26
+	file->usr2 not in g.localFiles	//requisite 18 and 27
+	//operations
+	g'.localFiles = g.localFiles + file-> usr2
+}
 
-run removeFile for 3 but 2 gitBob , 1 FILES
+pred removeShare(g,g': gitBob, file: FILES, usr1, usr2: USERS){
+	//preconditions
+	#g.registeredUserEmail[usr1]=1 	//requisite 21
+	#g.registeredUserType[usr1]=1 	//requisite 21
+	#g.registeredUserEmail[usr2]=1 	//requisite 21
+	#g.registeredUserType[usr2]=1 	//requisite 21
+	#g.fileMode[file]=1 			//requisite 18
+	#g.fileSize[file]=1 			//requisite 18
+	#g.fileVersion[file]=1 			//requisite 18
+	#g.fileOwner[file]=1 			//requisite 18
+	file->usr1 in g.localFiles 		//requisite 18 and 28
+	file->usr2 in g.localFiles 		//requisite 18 and 28
+	file->usr2 not in g.fileOwner	//requisite 28
+	//operations
+	g'.localFiles = g.localFiles - file-> usr2
+}
+
+pred changeSharingMode(g,g': gitBob, file: FILES, usr: USERS, mode: MODE){
+	//preconditions
+	#g.registeredUserEmail[usr]=1	//requisite 21
+	#g.registeredUserType[usr]=1 	//requisite 21
+	#g.fileMode[file]=1 			//requisite 18
+	#g.fileSize[file]=1 			//requisite 18
+	#g.fileVersion[file]=1 			//requisite 18
+	file->usr in g.fileOwner 		//requisite 18 and 35
+	(mode=SECURE => all u:USERS| g.registeredUserType[u]=PREMIUM)	//requisite 30 and 36
+	//operations
+	g'.fileMode[file] = mode		//requisite 29
+}	
+
+
+run changeSharingMode for 3 but 3 gitBob , 1 FILES
 
 	
