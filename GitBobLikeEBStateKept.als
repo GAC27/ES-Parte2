@@ -103,6 +103,13 @@ pred newUser (g,g': gitBob, u: USERS, m: UEMAILS, t: UTYPES, ){
     	//operations
 	g'.registeredUserEmail = 	g.registeredUserEmail + u->m
 	g'.registeredUserType = 	g.registeredUserType + u->t
+	//coisas que nao se podem alterar
+	g'.fileMode=g.fileMode
+	g'.fileSize=g.fileSize
+	g'.fileVersion=g.fileVersion
+	g'.fileOwner=g.fileOwner
+	g'.sharingOfFiles=g.sharingOfFiles
+	
 }
 
 assert newUserAdded{
@@ -123,6 +130,12 @@ pred removeUser(g,g': gitBob, u: USERS){
 	//operations
 	g'.registeredUserEmail = g.registeredUserEmail - u->g.registeredUserEmail[u]
 	g'.registeredUserType = g.registeredUserType - u->g.registeredUserType[u]
+	//coisas que nao se podem alterar
+	g'.fileMode=g.fileMode
+	g'.fileSize=g.fileSize
+	g'.fileVersion=g.fileVersion
+	g'.fileOwner=g.fileOwner
+	g'.sharingOfFiles=g.sharingOfFiles
 }
 
 assert removedUser{
@@ -154,6 +167,13 @@ pred upgradeUser(g,g': gitBob, u: USERS){
 	g.registeredUserType[u]=BASIC //requisite 9
 	//operation
 	 g'.registeredUserType[u]= PREMIUM
+	//coisas que nao se podem alterar
+	g'.registeredUserEmail=g.registeredUserEmail
+	g'.fileMode=g.fileMode
+	g'.fileSize=g.fileSize
+	g'.fileVersion=g.fileVersion
+	g'.fileOwner=g.fileOwner
+	g'.sharingOfFiles=g.sharingOfFiles
 }
 
 pred downgradeBasic(g,g': gitBob, u: USERS){
@@ -164,6 +184,13 @@ pred downgradeBasic(g,g': gitBob, u: USERS){
 	(all f: g.sharingOfFiles.u| g.fileMode[f]!= SECURE) 	//requisite 31
 	//operation
 	g'.registeredUserType[u]= BASIC
+	//coisas que nao se podem alterar
+	g'.registeredUserEmail=g.registeredUserEmail
+	g'.fileMode=g.fileMode
+	g'.fileSize=g.fileSize
+	g'.fileVersion=g.fileVersion
+	g'.fileOwner=g.fileOwner
+	g'.sharingOfFiles=g.sharingOfFiles
 }
 
 pred addFile(g,g': gitBob, file:FILES, size:Int, owner: USERS){
@@ -181,6 +208,9 @@ pred addFile(g,g': gitBob, file:FILES, size:Int, owner: USERS){
 	g'.fileVersion = g.fileVersion + file ->1 		//requisite 17
 	g'.fileOwner = g.fileOwner + file-> owner
 	g'.sharingOfFiles = g.sharingOfFiles + file-> owner
+	//coisas que nao se podem alterar
+	g'.registeredUserEmail=g.registeredUserEmail
+	g'.registeredUserType=g.registeredUserType
 }
 
 
@@ -201,6 +231,9 @@ pred removeFile (g,g': gitBob, file:FILES, usr: USERS){
 	g'.fileVersion = g.fileVersion - file ->g.fileVersion[file]	//requisite 12
 	g'.fileOwner = g.fileOwner - file-> g.fileOwner[file]		//requisite 12
 	g'.sharingOfFiles = g.sharingOfFiles - file-> USERS			//requisite 12
+	//coisas que nao se podem alterar
+	g'.registeredUserEmail=g.registeredUserEmail
+	g'.registeredUserType=g.registeredUserType
 }
 
 pred uploadFile(g,g': gitBob, file:FILES, usr: USERS){
@@ -213,6 +246,13 @@ pred uploadFile(g,g': gitBob, file:FILES, usr: USERS){
 	(g.fileMode[file]=READONLY => g.fileOwner[file]=usr)	//requisite 34
 	//operations
 	g'.fileVersion[file] = g.fileVersion[file].next	//requisite 19
+	//coisas que nao se podem alterar
+	g'.registeredUserEmail=g.registeredUserEmail
+	g'.registeredUserType=g.registeredUserType
+	g'.fileMode=g.fileMode
+	g'.fileSize=g.fileSize
+	g'.fileOwner=g.fileOwner
+	g'.sharingOfFiles=g.sharingOfFiles
 
 }
 
@@ -224,6 +264,14 @@ pred downloadFile(g,g': gitBob, file:FILES, usr: USERS){
 	#g.fileVersion[file]=1 		//requisite 18
 	#g.fileOwner[file]=1 		//requisite 18
 	file->usr in g.sharingOfFiles	//requisite 18  and 25
+	//coisas que nao se podem alterar
+	g'.registeredUserEmail=g.registeredUserEmail
+	g'.registeredUserType=g.registeredUserType
+	g'.fileMode=g.fileMode
+	g'.fileSize=g.fileSize
+	g'.fileVersion=g.fileVersion
+	g'.fileOwner=g.fileOwner
+	g'.sharingOfFiles=g.sharingOfFiles
 }
 
 pred shareFile(g,g': gitBob, file: FILES, usr1, usr2: USERS){
@@ -240,6 +288,13 @@ pred shareFile(g,g': gitBob, file: FILES, usr1, usr2: USERS){
 	file->usr2 not in g.sharingOfFiles	//requisite 18 and 27
 	//operations
 	g'.sharingOfFiles = g.sharingOfFiles + file-> usr2
+	//coisas que nao se podem alterar
+	g'.registeredUserEmail=g.registeredUserEmail
+	g'.registeredUserType=g.registeredUserType
+	g'.fileMode=g.fileMode
+	g'.fileSize=g.fileSize
+	g'.fileVersion=g.fileVersion
+	g'.fileOwner=g.fileOwner
 }
 
 pred removeShare(g,g': gitBob, file: FILES, usr1, usr2: USERS){
@@ -257,6 +312,13 @@ pred removeShare(g,g': gitBob, file: FILES, usr1, usr2: USERS){
 	file->usr2 not in g.fileOwner	//requisite 28
 	//operations
 	g'.sharingOfFiles = g.sharingOfFiles - file-> usr2
+	//coisas que nao se podem alterar
+	g'.registeredUserEmail=g.registeredUserEmail
+	g'.registeredUserType=g.registeredUserType
+	g'.fileMode=g.fileMode
+	g'.fileSize=g.fileSize
+	g'.fileVersion=g.fileVersion
+	g'.fileOwner=g.fileOwner
 }
 
 pred changeSharingMode(g,g': gitBob, file: FILES, usr: USERS, mode: MODE){
@@ -270,8 +332,16 @@ pred changeSharingMode(g,g': gitBob, file: FILES, usr: USERS, mode: MODE){
 	(mode=SECURE => all u:USERS| g.registeredUserType[u]=PREMIUM)	//requisite 30 and 36
 	//operations
 	g'.fileMode[file] = mode		//requisite 29
+	//coisas que nao se podem alterar
+	g'.registeredUserEmail=g.registeredUserEmail
+	g'.registeredUserType=g.registeredUserType
+	g'.fileSize=g.fileSize
+	g'.fileVersion=g.fileVersion
+	g'.fileOwner=g.fileOwner
+	g'.sharingOfFiles=g.sharingOfFiles
 }	
 
 
-run newUser for 3 but 3 gitBob , 1 USERS
+run newUser for 3 but 3 gitBob , 2 USERS , 2 UEMAILS
+
 	
