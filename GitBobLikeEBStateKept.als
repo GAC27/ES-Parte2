@@ -429,6 +429,8 @@ check noRemoveFileNotOwner
 
 pred uploadFile(g,g': gitBob, file:FILES, usr: USERS){
 	//preconditions
+	#g.registeredUserEmail[usr]=1 	
+	#g.registeredUserType[usr]=1
 	#g.fileMode[file]=1 	//requisite 18
 	#g.fileSize[file]=1 	//requisite 18
 	#g.fileVersion[file]=1 	//requisite 18
@@ -447,6 +449,54 @@ pred uploadFile(g,g': gitBob, file:FILES, usr: USERS){
 
 }
 
+assert uploadedFile{
+	all g,g':gitBob, user:USERS, file: FILES|
+		(!(no user.(g.registeredUserEmail)) and !(no user.(g.registeredUserType)) 
+		and  !(no g.fileMode[file]) and !(no g.fileSize[file]) and !(no g.fileVersion[file]) 
+		and !(no g.fileOwner[file]) and file-> user in g.sharingOfFiles and uploadFile[g,g',file,user])
+			implies (g'.registeredUserEmail=g.registeredUserEmail and g'.registeredUserType=g.registeredUserType
+			and g'.fileMode=g.fileMode and g'.fileSize=g.fileSize and g'.fileVersion=g.fileVersion
+			and g'.fileOwner=g.fileOwner and g'.sharingOfFiles=g.sharingOfFiles)
+}
+ //requisite 25
+assert noUploadedFileUserDoesntHaveAccess{
+	all g,g':gitBob, user:USERS, file: FILES|
+		(!(no user.(g.registeredUserEmail)) and !(no user.(g.registeredUserType)) 
+		and  !(no g.fileMode[file]) and !(no g.fileSize[file]) and !(no g.fileVersion[file]) 
+		and !(no g.fileOwner[file]) and file-> user not in g.sharingOfFiles and uploadFile[g,g',file,user])
+			implies (g'.registeredUserEmail=g.registeredUserEmail and g'.registeredUserType=g.registeredUserType
+			and g'.fileMode=g.fileMode and g'.fileSize=g.fileSize and g'.fileVersion=g.fileVersion
+			and g'.fileOwner=g.fileOwner and g'.sharingOfFiles=g.sharingOfFiles)
+}
+
+//requisite 34
+assert noUploadedFileReadonlyUserNotOwner{
+	all g,g':gitBob, user:USERS, file: FILES|
+		(!(no user.(g.registeredUserEmail)) and !(no user.(g.registeredUserType)) 
+		and  g.fileMode[file]=READONLY and !(no g.fileSize[file]) and !(no g.fileVersion[file]) 
+		and !(no g.fileOwner[file]) and file-> user in g.sharingOfFiles and uploadFile[g,g',file,user])
+			implies (g'.registeredUserEmail=g.registeredUserEmail and g'.registeredUserType=g.registeredUserType
+			and g'.fileMode=g.fileMode and g'.fileSize=g.fileSize and g'.fileVersion=g.fileVersion
+			and g'.fileOwner=g.fileOwner and g'.sharingOfFiles=g.sharingOfFiles)
+}
+
+//requisite 18
+assert noUploadedFileFileInexistent{
+	all g,g':gitBob, user:USERS, file: FILES|
+		(!(no user.(g.registeredUserEmail)) and !(no user.(g.registeredUserType)) 
+		and  no g.fileMode[file] and no g.fileSize[file] and no g.fileVersion[file] 
+		and no g.fileOwner[file] and no g.sharingOfFiles[file] and uploadFile[g,g',file,user])
+			implies (g'.registeredUserEmail=g.registeredUserEmail and g'.registeredUserType=g.registeredUserType
+			and g'.fileMode=g.fileMode and g'.fileSize=g.fileSize and g'.fileVersion=g.fileVersion
+			and g'.fileOwner=g.fileOwner and g'.sharingOfFiles=g.sharingOfFiles)
+}
+
+check uploadedFile
+check noUploadedFileUserDoesntHaveAccess
+check noUploadedFileReadonlyUserNotOwner
+check noUploadedFileFileInexistent
+
+
 
 pred downloadFile(g,g': gitBob, file:FILES, usr: USERS){
 	//preconditions
@@ -464,6 +514,8 @@ pred downloadFile(g,g': gitBob, file:FILES, usr: USERS){
 	g'.fileOwner=g.fileOwner
 	g'.sharingOfFiles=g.sharingOfFiles
 }
+
+
 
 pred shareFile(g,g': gitBob, file: FILES, usr1, usr2: USERS){
 	//preconditions
@@ -488,6 +540,63 @@ pred shareFile(g,g': gitBob, file: FILES, usr1, usr2: USERS){
 	g'.fileOwner=g.fileOwner
 }
 
+assert sharedFile{
+	all g,g':gitBob, user1,user2 :USERS, file: FILES|
+		(!(no user1.(g.registeredUserEmail)) and !(no user1.(g.registeredUserType))
+		and  !(no user2.(g.registeredUserEmail)) and !(no user2.(g.registeredUserType))
+		and  !(no g.fileMode[file]) and !(no g.fileSize[file]) and !(no g.fileVersion[file]) 
+		and !(no g.fileOwner[file]) and file-> user1 in g.sharingOfFiles 
+		and  file-> user2 not in g.sharingOfFiles and shareFile[g, g', file, user1, user2])
+			implies (g'.registeredUserEmail=g.registeredUserEmail and g'.registeredUserType=g.registeredUserType
+			and g'.fileMode=g.fileMode and g'.fileSize=g.fileSize and g'.fileVersion=g.fileVersion
+			and g'.fileOwner=g.fileOwner and g'.sharingOfFiles= g.sharingOfFiles + file-> user2)
+}
+
+//requisite 27
+assert noSharedFileUser2InShare{
+	all g,g':gitBob, user1,user2 :USERS, file: FILES|
+		(!(no user1.(g.registeredUserEmail)) and !(no user1.(g.registeredUserType))
+		and  !(no user2.(g.registeredUserEmail)) and !(no user2.(g.registeredUserType))
+		and  !(no g.fileMode[file]) and !(no g.fileSize[file]) and !(no g.fileVersion[file]) 
+		and !(no g.fileOwner[file]) and file-> user1 in g.sharingOfFiles 
+		and  file-> user2 in g.sharingOfFiles and shareFile[g, g', file, user1, user2])
+			implies (g'.registeredUserEmail=g.registeredUserEmail and g'.registeredUserType=g.registeredUserType
+			and g'.fileMode=g.fileMode and g'.fileSize=g.fileSize and g'.fileVersion=g.fileVersion
+			and g'.fileOwner=g.fileOwner and g'.sharingOfFiles= g.sharingOfFiles)
+}
+
+//requisite 26
+assert noSharedFileUser1NotInShare{
+	all g,g':gitBob, user1,user2 :USERS, file: FILES|
+		(!(no user1.(g.registeredUserEmail)) and !(no user1.(g.registeredUserType))
+		and  !(no user2.(g.registeredUserEmail)) and !(no user2.(g.registeredUserType))
+		and  !(no g.fileMode[file]) and !(no g.fileSize[file]) and !(no g.fileVersion[file]) 
+		and !(no g.fileOwner[file]) and file-> user1 not in g.sharingOfFiles 
+		and  file-> user2 not in g.sharingOfFiles and shareFile[g, g', file, user1, user2])
+			implies (g'.registeredUserEmail=g.registeredUserEmail and g'.registeredUserType=g.registeredUserType
+			and g'.fileMode=g.fileMode and g'.fileSize=g.fileSize and g'.fileVersion=g.fileVersion
+			and g'.fileOwner=g.fileOwner and g'.sharingOfFiles= g.sharingOfFiles)
+}
+
+//requisite 21
+assert noSharedFileUser2NotRegistered{
+	all g,g':gitBob, user1,user2 :USERS, file: FILES|
+		(!(no user1.(g.registeredUserEmail)) and !(no user1.(g.registeredUserType))
+		and  no user2.(g.registeredUserEmail) and no user2.(g.registeredUserType)
+		and  !(no g.fileMode[file]) and !(no g.fileSize[file]) and !(no g.fileVersion[file]) 
+		and !(no g.fileOwner[file]) and file-> user1 not in g.sharingOfFiles 
+		and  file-> user2 not in g.sharingOfFiles and shareFile[g, g', file, user1, user2])
+			implies (g'.registeredUserEmail=g.registeredUserEmail and g'.registeredUserType=g.registeredUserType
+			and g'.fileMode=g.fileMode and g'.fileSize=g.fileSize and g'.fileVersion=g.fileVersion
+			and g'.fileOwner=g.fileOwner and g'.sharingOfFiles= g.sharingOfFiles)
+}
+
+check sharedFile
+check noSharedFileUser2InShare
+check noSharedFileUser1NotInShare
+check noSharedFileUser2NotRegistered
+
+
 pred removeShare(g,g': gitBob, file: FILES, usr1, usr2: USERS){
 	//preconditions
 	#g.registeredUserEmail[usr1]=1 	//requisite 21
@@ -511,6 +620,47 @@ pred removeShare(g,g': gitBob, file: FILES, usr1, usr2: USERS){
 	g'.fileVersion=g.fileVersion
 	g'.fileOwner=g.fileOwner
 }
+
+assert removedShare{
+	all g,g':gitBob, user1,user2 :USERS, file: FILES|
+		(!(no user1.(g.registeredUserEmail)) and !(no user1.(g.registeredUserType))
+		and  !(no user2.(g.registeredUserEmail)) and !(no user2.(g.registeredUserType))
+		and  !(no g.fileMode[file]) and !(no g.fileSize[file]) and !(no g.fileVersion[file]) 
+		and g.fileOwner[file]!=user2 and file-> user1 in g.sharingOfFiles 
+		and  file-> user2 in g.sharingOfFiles and shareFile[g, g', file, user1, user2])
+			implies (g'.registeredUserEmail=g.registeredUserEmail and g'.registeredUserType=g.registeredUserType
+			and g'.fileMode=g.fileMode and g'.fileSize=g.fileSize and g'.fileVersion=g.fileVersion
+			and g'.fileOwner=g.fileOwner and g'.sharingOfFiles= g.sharingOfFiles - file-> user2)
+}
+//requisite 28
+assert removedShareUser1NoAccess{
+	all g,g':gitBob, user1,user2 :USERS, file: FILES|
+		(!(no user1.(g.registeredUserEmail)) and !(no user1.(g.registeredUserType))
+		and  !(no user2.(g.registeredUserEmail)) and !(no user2.(g.registeredUserType))
+		and  !(no g.fileMode[file]) and !(no g.fileSize[file]) and !(no g.fileVersion[file]) 
+		and g.fileOwner[file]!=user2 and file-> user1 not in g.sharingOfFiles 
+		and  file-> user2 in g.sharingOfFiles and shareFile[g, g', file, user1, user2])
+			implies (g'.registeredUserEmail=g.registeredUserEmail and g'.registeredUserType=g.registeredUserType
+			and g'.fileMode=g.fileMode and g'.fileSize=g.fileSize and g'.fileVersion=g.fileVersion
+			and g'.fileOwner=g.fileOwner and g'.sharingOfFiles= g.sharingOfFiles)
+}
+
+//requisite 28
+assert removedShareUser2Owner{
+	all g,g':gitBob, user1,user2 :USERS, file: FILES|
+		(!(no user1.(g.registeredUserEmail)) and !(no user1.(g.registeredUserType))
+		and  !(no user2.(g.registeredUserEmail)) and !(no user2.(g.registeredUserType))
+		and  !(no g.fileMode[file]) and !(no g.fileSize[file]) and !(no g.fileVersion[file]) 
+		and g.fileOwner[file]=user2 and file-> user1 in g.sharingOfFiles 
+		and  file-> user2 in g.sharingOfFiles and shareFile[g, g', file, user1, user2])
+			implies (g'.registeredUserEmail=g.registeredUserEmail and g'.registeredUserType=g.registeredUserType
+			and g'.fileMode=g.fileMode and g'.fileSize=g.fileSize and g'.fileVersion=g.fileVersion
+			and g'.fileOwner=g.fileOwner and g'.sharingOfFiles= g.sharingOfFiles)
+}
+
+check removedShare
+check removedShareUser1NoAccess
+check removedShareUser2Owner
 
 pred changeSharingMode(g,g': gitBob, file: FILES, usr: USERS, mode: MODE){
 	//preconditions
