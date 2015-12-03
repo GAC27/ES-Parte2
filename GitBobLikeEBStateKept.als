@@ -50,7 +50,7 @@ pred init [g: gitBob] {
  // all g: gitBob | g.state= t
 }
 
-
+/*
 // 2 users diferentes nao podem ter o mesmo mail independentemente do tipo associado a sua conta (t1 e t2 iguais ou diferentes)
 // requisite 3
 fact{
@@ -64,12 +64,16 @@ fact{
 	all g:gitBob| all  u1: USERS |
 		#g.registeredUserEmail[u1]<=1 && #g.registeredUserType[u1]<=1
 }
+*/
 
+/*
 //nao podem existir dois ficheiros iguais
 fact{
 	all f: FILES|
 		#gitBob.fileMode[f]<=1  && #gitBob.fileSize[f]<=1 && #gitBob.fileVersion[f]<=1  && #gitBob.fileOwner[f]<=1  
 }
+*/
+
 
 //Um ficheiro tem de ter uma versao >0 e tamanho tem de ser um numero natural
 fact{
@@ -100,6 +104,59 @@ fact traces {
 }
 
 
+//1 user so pode ter um mail e um tipo
+//requisite 2
+assert userHasOneTypeOneMail{
+	all g:gitBob, u:USERS|
+				(#g.registeredUserEmail[u]=1 and #g.registeredUserType[u]=1) or 	(#g.registeredUserEmail[u]=0 and #g.registeredUserType[u]=0) 
+			
+}
+
+
+// 2 users diferentes nao podem ter o mesmo mail independentemente do tipo associado a sua conta (t1 e t2 iguais ou diferentes)
+// requisite 3
+assert onlyOneMail{
+	all g:gitBob, u1,u2:USERS, m: UEMAILS |
+		(u1->m in g.registeredUserEmail and u2->m in g.registeredUserEmail => u1=u2)
+			
+}
+
+check userHasOneTypeOneMail for 10 
+check onlyOneMail for 10
+
+
+//nao podem existir dois ficheiros iguais
+//requisite 10
+assert noFilesIguais{
+	all g: gitBob, f: FILES|
+		(#g.fileMode[f]=1  and #g.fileSize[f]=1 and #g.fileVersion[f]=1  and #g.fileOwner[f]=1  ) or (#g.fileMode[f]=0  and #g.fileSize[f]=0 and #g.fileVersion[f]=0  and #g.fileOwner[f]=0  )
+			
+}
+
+check noFilesIguais for 10
+
+//Um ficheiro tem de ter uma versao >0 e tamanho tem de ser um numero natural
+// requisite 17
+assert versionAndSizeBiggerThan0{
+	all g: gitBob, f : g.fileVersion.Int & g.fileSize.Int |
+		(g.fileVersion[f] >0 && g.fileSize[f]>=0)
+			
+}
+
+check versionAndSizeBiggerThan0 
+
+//requisite
+assert versionIsAllwaysTheSame{
+	all g: gitBob  - gb/last ,  f : g.fileVersion.Int & g.fileSize.Int  | let g'=g.next | 
+		(f in g'.fileVersion.Int & g'.fileSize.Int) and (g.fileVersion[f] = g'.fileVersion[f])
+			
+}
+
+check versionIsAllwaysTheSame for 10
+
+
+
+
 //requisite1
 pred newUser (g,g': gitBob, u: USERS, m: UEMAILS, t: UTYPES, ){
 	//preconditions
@@ -118,16 +175,6 @@ pred newUser (g,g': gitBob, u: USERS, m: UEMAILS, t: UTYPES, ){
 	
 }
 
-assert newUserAdded{
-	all g,g':gitBob, u:USERS, m: UEMAILS, t: UTYPES|
-		(no u.(g.registeredUserEmail) and no u.(g.registeredUserType) and newUser[g,g',u,m,t])
-			implies (u->m in g'.registeredUserEmail and u->t in g'.registeredUserType
-			and g'.fileMode=g.fileMode and g'.fileSize=g.fileSize and g'.fileVersion=g.fileVersion
-			and g'.fileOwner=g.fileOwner and g'.sharingOfFiles=g.sharingOfFiles)
-			
-}
-
-check newUserAdded
 
 pred removeUser(g,g': gitBob, u: USERS){
     //preconditions
@@ -146,6 +193,8 @@ pred removeUser(g,g': gitBob, u: USERS){
 	g'.sharingOfFiles=g.sharingOfFiles
 }
 
+
+/*
 assert removedUser{
 	all g,g',g'':gitBob, u:USERS, m: UEMAILS, t: UTYPES|
 		(no u.(g.registeredUserEmail) and no u.(g.registeredUserType) and newUser[g,g',u,m,t] and removeUser[g',g'',u])
@@ -187,6 +236,7 @@ assert noRemoveUserInexistent{
 
 check noRemoveUserInFileOwner
 check noRemoveUserInexistent
+*/
 
 pred upgradeUser(g,g': gitBob, u: USERS){
 	//preconditions
@@ -204,6 +254,7 @@ pred upgradeUser(g,g': gitBob, u: USERS){
 	g'.sharingOfFiles=g.sharingOfFiles
 }
 
+/*
 assert upgradedUser{
 	all g,g':gitBob, u:USERS|
 		(!(no u.(g.registeredUserEmail)) and !(no u.(g.registeredUserType)) 
@@ -234,7 +285,7 @@ assert noUpgradeUserPremium{
 check upgradedUser
 check noUpgradeUserInexistent
 check noUpgradeUserPremium
-
+*/
 
 pred downgradeBasic(g,g': gitBob, u: USERS){
 	//preconditions
@@ -253,6 +304,8 @@ pred downgradeBasic(g,g': gitBob, u: USERS){
 	g'.sharingOfFiles=g.sharingOfFiles
 }
 
+
+/*
 //requsite 8
 assert downgradeBasicUser{
 		all g,g':gitBob, u:USERS|
@@ -299,6 +352,7 @@ check downgradeBasicUser
 check noDowngradeBasicInexistent
 check noDowngradeBasic
 check noDowngradeBasicInSecureShare
+*/
 
 pred addFile(g,g': gitBob, file:FILES, size:Int, owner: USERS){
 	//preconditions
@@ -320,6 +374,8 @@ pred addFile(g,g': gitBob, file:FILES, size:Int, owner: USERS){
 	g'.registeredUserType=g.registeredUserType
 }
 
+
+/*
 assert addedFile{
 	all g,g':gitBob, owner:USERS, file: FILES, size: Int|
 		(!(no owner.(g.registeredUserEmail)) and !(no owner.(g.registeredUserType)) 
@@ -353,6 +409,8 @@ assert noAddedFileUserNotRegistered{
 check addedFile
 check noAddedFileExists
 check noAddedFileUserNotRegistered
+*/
+
 
 //falta ver os acessos e partilhas
 pred removeFile (g,g': gitBob, file:FILES, usr: USERS){
@@ -377,7 +435,7 @@ pred removeFile (g,g': gitBob, file:FILES, usr: USERS){
 	g'.registeredUserType=g.registeredUserType
 }
 
-
+/*
 assert removedFile{
 	all g,g':gitBob, user:USERS, file: FILES|
 		(!(no user.(g.registeredUserEmail)) and !(no user.(g.registeredUserType)) 
@@ -425,7 +483,7 @@ check removedFile
 check noRemoveFileDontExists
 check noRemoveFileUserDontAcess
 check noRemoveFileNotOwner
-
+*/
 
 pred uploadFile(g,g': gitBob, file:FILES, usr: USERS){
 	//preconditions
@@ -449,6 +507,8 @@ pred uploadFile(g,g': gitBob, file:FILES, usr: USERS){
 
 }
 
+
+/*
 assert uploadedFile{
 	all g,g':gitBob, user:USERS, file: FILES|
 		(!(no user.(g.registeredUserEmail)) and !(no user.(g.registeredUserType)) 
@@ -495,7 +555,7 @@ check uploadedFile
 check noUploadedFileUserDoesntHaveAccess
 check noUploadedFileReadonlyUserNotOwner
 check noUploadedFileFileInexistent
-
+*/
 
 
 pred downloadFile(g,g': gitBob, file:FILES, usr: USERS){
@@ -540,6 +600,8 @@ pred shareFile(g,g': gitBob, file: FILES, usr1, usr2: USERS){
 	g'.fileOwner=g.fileOwner
 }
 
+
+/*
 assert sharedFile{
 	all g,g':gitBob, user1,user2 :USERS, file: FILES|
 		(!(no user1.(g.registeredUserEmail)) and !(no user1.(g.registeredUserType))
@@ -595,6 +657,7 @@ check sharedFile
 check noSharedFileUser2InShare
 check noSharedFileUser1NotInShare
 check noSharedFileUser2NotRegistered
+*/
 
 
 pred removeShare(g,g': gitBob, file: FILES, usr1, usr2: USERS){
@@ -621,6 +684,8 @@ pred removeShare(g,g': gitBob, file: FILES, usr1, usr2: USERS){
 	g'.fileOwner=g.fileOwner
 }
 
+
+/*
 assert removedShare{
 	all g,g':gitBob, user1,user2 :USERS, file: FILES|
 		(!(no user1.(g.registeredUserEmail)) and !(no user1.(g.registeredUserType))
@@ -661,6 +726,8 @@ assert removedShareUser2Owner{
 check removedShare
 check removedShareUser1NoAccess
 check removedShareUser2Owner
+*/
+
 
 pred changeSharingMode(g,g': gitBob, file: FILES, usr: USERS, mode: MODE){
 	//preconditions
