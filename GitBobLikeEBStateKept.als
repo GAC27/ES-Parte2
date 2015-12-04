@@ -51,42 +51,6 @@ pred init [g: gitBob] {
 }
 
 
-/*
-// 2 users diferentes nao podem ter o mesmo mail independentemente do tipo associado a sua conta (t1 e t2 iguais ou diferentes)
-// requisite 3
-fact{
-	all g:gitBob| all u1,u2: USERS | all m1: UEMAILS |
-		u1->m1 in g.registeredUserEmail && u2->m1 in g.registeredUserEmail => u1=u2
-}
-
-
-//1 user so pode ter um mail e um tipo
-//
-fact{
-	all g:gitBob| all  u1: USERS |
-		#g.registeredUserEmail[u1]<=1 && #g.registeredUserType[u1]<=1
-}
-*/
-
-
-/*
-//nao podem existir dois ficheiros iguais
-fact{
-	all f: FILES|
-		#gitBob.fileMode[f]<=1  && #gitBob.fileSize[f]<=1 && #gitBob.fileVersion[f]<=1  && #gitBob.fileOwner[f]<=1  
-}
-*/
-
-
-/*
-//Um ficheiro tem de ter uma versao >0 e tamanho tem de ser um numero natural
-fact{
-	all f: FILES|
-		gitBob.fileVersion[f]>0 && gitBob.fileSize[f]>=0
-}
-*/
-
-
 //requisite 22: A GitBob ﬁle is always shared with its owner;
 fact{
 	all f:FILES | all u:USERS | all g:gitBob |
