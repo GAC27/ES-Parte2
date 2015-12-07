@@ -30,7 +30,8 @@ sig gitBob{
 	registeredUserType:  USERS set -> lone UTYPES,  //requisite 1 and 2
 	fileMode:	FILES  -> lone MODE, 			//requisite 29
 	fileSize:	FILES  -> lone Int, 				//requisite 10
-	fileVersion:	FILES  -> lone Int, 				//requisite 10 and 37
+	fileVersion:	FILES  -> lone Int, 				//requisite 10 and 
+
 	fileOwner:	FILES  -> lone USERS, 			//requisite 10
 	//usado para guardarmos os acessos dos users aos files
 	sharingOfFiles:  FILES -> USERS 					//requisite 20
@@ -147,6 +148,12 @@ assert fileAlwaysSharedOwner{
 }
 check fileAlwaysSharedOwner
 
+//requisite 30
+assert allFillesSecureAllUsersPremium{
+		all g: gitBob, f: g.sharingOfFiles.USERS, u:f.(g.sharingOfFiles)|
+			g.fileMode[f] = SECURE implies g.registeredUserType[u] = PREMIUM 
+}
+
 //requisite1
 pred newUser (g,g': gitBob, u: USERS, m: UEMAILS, t: UTYPES, ){
 	//preconditions
@@ -258,7 +265,7 @@ pred removeFile (g,g': gitBob, file:FILES, usr: USERS){
 	//operations
 	g'.fileMode = g.fileMode - file->g.fileMode[file]		//requisite 12 ficheiros removidos ja nao constam no gitBob
 	g'.fileSize = g.fileSize - file-> g.fileSize[file]			//requisite 12
-	g'.fileVersion = g.fileVersion - file ->g.fileVersion[file]	//requisite 12
+	g'.fileVersion = g.fileVersion - file ->g.fileVersion[file]	//requisite 12  e 37 pois apenas file existentes no gitBob possuem versao
 	g'.fileOwner = g.fileOwner - file-> g.fileOwner[file]		//requisite 12
 	g'.sharingOfFiles = g.sharingOfFiles - file-> USERS			//requisite 12
 	//coisas que nao se podem alterar
@@ -322,7 +329,7 @@ pred shareFile(g,g': gitBob, file: FILES, usr1, usr2: USERS){
 	#g.fileOwner[file]=1 			//requisite 18
 	file->usr1 in g.sharingOfFiles		//requisite 26
 	file->usr2 not in g.sharingOfFiles	//requisite 27
-	//(mode=SECURE => all u:USERS| g.registeredUserType[u]=PREMIUM)	//requisite 30 and 36
+	g.fileMode[file] = SECURE => (g.registeredUserType[usr2]=PREMIUM)	//requisite 30
 	//operations
 	g'.sharingOfFiles = g.sharingOfFiles + file-> usr2
 	//coisas que nao se podem alterar
@@ -370,7 +377,7 @@ pred changeSharingMode(g,g': gitBob, file: FILES, usr: USERS, mode: MODE){
 	#g.fileSize[file]=1 			//requisite 18
 	#g.fileVersion[file]=1 			//requisite 18
 	file->usr in g.fileOwner 		//requisite 18 and 35
-	(mode=SECURE => all u:USERS| g.registeredUserType[u]=PREMIUM)	//requisite 30 and 36
+	(mode=SECURE => all u:USERS| g.registeredUserType[u]=PREMIUM)	//requisite 36
 	//operations
 	g'.fileMode = g.fileMode -  file->g.fileMode[file] + file->mode		//requisite 29
 	//coisas que nao se podem alterar
