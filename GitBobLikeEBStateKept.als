@@ -140,6 +140,12 @@ assert shareOnlyRegUsers{
 
 check shareOnlyRegUsers
 
+assert fileAlwaysSharedOwner{
+		all g:gitBob, file: g.sharingOfFiles.USERS|
+     		file->g.fileOwner[file] in g.sharingOfFiles
+			 
+}
+check fileAlwaysSharedOwner
 
 //requisite1
 pred newUser (g,g': gitBob, u: USERS, m: UEMAILS, t: UTYPES, ){
