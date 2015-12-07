@@ -126,8 +126,8 @@ check sizeIsAllwaysTheSame for 10
 
 //requisite 11
 assert versionNat1SizeNat{
-	all g: gitBob, f: FILES| (f in g.fileVersion.Int & g.fileSize.Int &  g.fileMode.MODE & g.fileOwner.USERS & g.sharingOfFiles.USERS and 
-		 g.fileVersion[f]>0 and g.fileSize[f]>=0 )
+	all g: gitBob, f: FILES| (f in (g.fileVersion.Int & g.fileSize.Int &  g.fileMode.MODE & g.fileOwner.USERS & g.sharingOfFiles.USERS)) (and 
+		 f.(g.fileVersion)>0 and f.(g.fileSize)>=0 )
 			
 }
 
@@ -265,7 +265,8 @@ pred uploadFile(g,g': gitBob, file:FILES, usr: USERS){
 	file->usr in g.sharingOfFiles //requisite 18 and 25
 	(g.fileMode[file]=READONLY => g.fileOwner[file]=usr)	//requisite 34
 	//operations
-	g'.fileVersion = g.fileVersion - file-> g.fileVersion[file] + file->g.fileVersion[file].next	//requisite 19
+	g'.fileVersion =    g.fileVersion - file-> g.fileVersion[file]	//requisite 19
+	g'.fileVersion = 	g'.fileVersion + file->g.fileVersion[file].next
 	//coisas que nao se podem alterar
 	g'.registeredUserEmail=g.registeredUserEmail
 	g'.registeredUserType=g.registeredUserType
@@ -275,7 +276,6 @@ pred uploadFile(g,g': gitBob, file:FILES, usr: USERS){
 	g'.sharingOfFiles=g.sharingOfFiles
 
 }
-
 
 
 pred downloadFile(g,g': gitBob, file:FILES, usr: USERS){
