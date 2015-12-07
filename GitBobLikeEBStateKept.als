@@ -126,7 +126,7 @@ check sizeIsAllwaysTheSame for 10
 
 //requisite 11
 assert versionNat1SizeNat{
-	all g: gitBob, f: FILES| (f in (g.fileVersion.Int & g.fileSize.Int &  g.fileMode.MODE & g.fileOwner.USERS & g.sharingOfFiles.USERS)) (and 
+	all g: gitBob, f: FILES| (f in (g.fileVersion.Int & g.fileSize.Int &  g.fileMode.MODE & g.fileOwner.USERS & g.sharingOfFiles.USERS)) implies ( 
 		 f.(g.fileVersion)>0 and f.(g.fileSize)>=0 )
 			
 }
