@@ -1,7 +1,5 @@
-//Os Naturals nao estavam a funcionar
 open util/integer as i
-open util/ordering[gitBob] as gb
-
+z
 
 sig USERS {}
 
@@ -51,18 +49,6 @@ pred init [g: gitBob] {
 	// all g: gitBob | g.state= t
 }
 
-
-//requisite 22: A GitBob ﬁle is always shared with its owner;
-fact{
-	all f:FILES | all u:USERS | all g:gitBob |
-		f->u in g.fileOwner => f->u in g.sharingOfFiles
-}
-
-//requisite 29
-fact{
-	all f:FILES | 
-		gitBob.fileMode[f] in MODE
-}
 
 fact traces {
 	init [gb/first]
@@ -139,20 +125,22 @@ assert shareOnlyRegUsers{
 		(u in FILES.(g.sharingOfFiles)) implies ( #g.registeredUserEmail[u]=1 and #g.registeredUserType[u]=1)
 }
 
-check shareOnlyRegUsers
+check shareOnlyRegUsers for 10
 
+//requisite 22
 assert fileAlwaysSharedOwner{
 		all g:gitBob, file: g.sharingOfFiles.USERS|
      		file->g.fileOwner[file] in g.sharingOfFiles
 			 
 }
-check fileAlwaysSharedOwner
+check fileAlwaysSharedOwner for 10 
 
 //requisite 30
 assert allFillesSecureAllUsersPremium{
 		all g: gitBob, f: g.sharingOfFiles.USERS, u:f.(g.sharingOfFiles)|
 			g.fileMode[f] = SECURE implies g.registeredUserType[u] = PREMIUM 
 }
+check allFillesSecureAllUsersPremium for 10
 
 //requisite1
 pred newUser (g,g': gitBob, u: USERS, m: UEMAILS, t: UTYPES, ){
@@ -388,8 +376,5 @@ pred changeSharingMode(g,g': gitBob, file: FILES, usr: USERS, mode: MODE){
 	g'.fileOwner=g.fileOwner
 	g'.sharingOfFiles=g.sharingOfFiles
 }	
-
-
-run newUser for 3 but 3 gitBob , 2 USERS , 2 UEMAILS
 
 	
