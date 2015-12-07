@@ -124,7 +124,6 @@ assert sizeIsAllwaysTheSame{
 check sizeIsAllwaysTheSame for 10
 
 
-//requisite 11
 assert versionNat1SizeNat{
 	all g: gitBob, f: FILES| (f in (g.fileVersion.Int & g.fileSize.Int &  g.fileMode.MODE & g.fileOwner.USERS & g.sharingOfFiles.USERS)) implies ( 
 		 f.(g.fileVersion)>0 and f.(g.fileSize)>=0 )
@@ -132,6 +131,14 @@ assert versionNat1SizeNat{
 }
 
 check versionNat1SizeNat for 10
+
+//requisite 21
+assert shareOnlyRegUsers{
+	all g:gitBob, u:USERS| 
+		(u in FILES.(g.sharingOfFiles)) implies ( #g.registeredUserEmail[u]=1 and #g.registeredUserType[u]=1)
+}
+
+check shareOnlyRegUsers
 
 
 //requisite1
