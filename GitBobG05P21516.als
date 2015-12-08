@@ -1,5 +1,5 @@
 open util/integer as i
-z
+open util/ordering[gitBob] as gb
 
 sig USERS {}
 
